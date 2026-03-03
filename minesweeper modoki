@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>マインスイーパー</title>
+<style>
+  body {
+    font-family: sans-serif;
+    text-align: center;
+  }
+  #board {
+    display: grid;
+    grid-template-columns: repeat(9, 40px);
+    grid-template-rows: repeat(9, 40px);
+    gap: 2px;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  .cell {
+    width: 40px;
+    height: 40px;
+    background: lightgray;
+    border: 1px solid #999;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .open {
+    background: white;
+    cursor: default;
+  }
+  .mine {
+    background: red;
+  }
+</style>
+</head>
+<body>
+
+<h1>マインスイーパー</h1>
+<div id="board"></div>
+<p id="message"></p>
+
+<script>
+const size = 9;
+const mineCount = 10;
+const board = document.getElementById("board");
+const message = document.getElementById("message");
+
+let cells = [];
+let mines = [];
+let openedCount = 0;
+
+function init() {
+  cells = [];
+  mines = [];
+  openedCount = 0;
+  board.innerHTML = "";
+  message.textContent = "";
+
+  // 地雷配置
+  while (mines.length < mineCount) {
+    let rand = Math.floor(Math.random() * size * size);
+    if (!mines.includes(rand)) {
+      mines.push(rand);
+    }
+  }
+
+  for (let i = 0; i < size * size; i++) {
+    const cell = document.createElement("div");
+    cell.classList.add("cell");
+    cell.dataset.index = i;
+    cell.addEventListener("click", leftClick);
+    cell.addEventListener("contextmenu", rightClick);
+    board.appendChild(cell);
+    cells.push(cell);
+  }
+}
+
+function leftClick(e) {
+  const index = parseInt(e.target.dataset.index);
+  if (e.target.classList.contains("open")) return;
+
+  if (mines.includes(index)) {
+    revealMines();
+    message.textContent = "ゲームオーバー！";
+    return;
+  }
+
+  openCell(index);
+
+  if (openedCount === size * size - mineCount) {
+    message.textContent = "クリア！";
+  }
+}
+
+function rightClick(e) {
+  e.preventDefault();
+  if (e.target.classList.contains("open")) return;
+
+  if (e.target.textContent === "🚩") {
+    e.target.textContent = "";
+  } else {
+    e.target.textContent = "🚩";
+  }
+}
+
+function openCell(index) {
+  const cell = cells[index];
+  if (cell.classList.contains("open")) return;
+
+  cell.classList.add("open");
+  openedCount++;
+
+  const count = countMines(index);
+  if (count > 0) {
+    cell.textContent = count;
+  } else {
+    const neighbors = getNeighbors(index);
+    neighbors.forEach(n => openCell(n));
+  }
+}
+
+function countMines(index) {
+  return getNeighbors(index).filter(n => mines.includes(n)).length;
+}
+
+function getNeighbors(index) {
+  const neighbors = [];
+  const row = Math.floor(index / size);
+  const col = index % size;
+
+  for (let r = -1; r <= 1; r++) {
+    for (let c = -1; c <= 1; c++) {
+      if (r === 0 && c === 0) continue;
+      const newRow = row + r;
+      const newCol = col + c;
+      if (newRow >= 0 && newRow < size && newCol >= 0 && newCol < size) {
+        neighbors.push(newRow * size + newCol);
+      }
+    }
+  }
+  return neighbors;
+}
+
+function revealMines() {
+  mines.forEach(i => {
+    cells[i].classList.add("mine");
+    cells[i].textContent = "💣";
+  });
+}
+
+init();
+</script>
+
+</body>
+</html>
